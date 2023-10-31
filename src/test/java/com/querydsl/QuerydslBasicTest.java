@@ -281,7 +281,7 @@ public class QuerydslBasicTest {
     @DisplayName("queryDsl_theta_join_TEST")
     void queryDslThetaJoinTest(){
 
-        // 연관 관계 없는 필드로 join = theta join
+        // 연관 관계 없는 필드습 join = theta join
         em.persist(new Member("teamA"));
         em.persist(new Member("teamB"));
 
@@ -295,5 +295,81 @@ public class QuerydslBasicTest {
         for(Member member : result) {
             System.out.println(member);
         }
+    }
+
+    @Test
+    @DisplayName("queryDsl_join_on_TEST")
+    void queryDslJoinOnTest(){
+
+        // 회원과 팀 조회 하면서, 팀 이름이 teamA 인 팀만 조인, 회원은 모두 조회
+        // jpql : select m, t from Member m left join m.team t on t.name = 'teamA';
+        List<Tuple> result01 = queryDsl
+                .select(member, team)
+                .from(member)
+                // left outer join -> teamA 가 아닌 member 여도 모두 조회
+                .leftJoin(member.team, team)
+                .on(team.name.eq("teamA"))
+                .fetch();
+
+        for(Tuple tuple: result01) {
+            System.out.println("tuple = " + tuple);
+        }
+
+
+        // 내부 조인인 경우, on == where (조인 대상 필터링)
+        List<Tuple> result02 = queryDsl
+                .select(member, team)
+                .from(member)
+                .innerJoin(member.team, team)
+                .where(team.name.eq("teamA"))
+                .fetch();
+
+        for(Tuple tuple : result02) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+
+    /**
+     * - 연관관계 없는 필드로 조인 하는 실습
+     * ex) 회원의 이름과 팀 이름이 같은 대상 외부 조인
+    **/
+    @Test
+    @DisplayName("queryDsl_no_relation_join_on_TEST")
+    void queryDslNoRelationJoinOnTest(){
+
+        // jpql :  select m,t from Member m left join Team t on m.name = t.name
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+
+        List<Tuple> result = queryDsl
+                .select(member, team)
+                .from(member)
+                // leftJoin(member.team,team) 인 경우 member fk 와 team pk 로 매칭
+                .leftJoin(team)
+                .on(member.name.eq(team.name))
+                .fetch();
+
+        for(Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+        
+        
+        // 결과 : leftJoin 이기 때문에 모든 Member 엔티티 가져 오고,
+        // member.name = team.name 인 경우 team 엔티티 가져 옴
+
+
+        List<Tuple> result02 = queryDsl
+                .select(member, team)
+                .from(member)
+                .innerJoin(team)
+                .on(member.name.eq(team.name))
+                .fetch();
+        
+        for(Tuple tuple : result02) {
+            System.out.println("tuple = " + tuple);
+        }
+
+        // 결과 : innerJoin 이기 때문에 member.name = team.name 인 경우 가져옴
     }
 }
