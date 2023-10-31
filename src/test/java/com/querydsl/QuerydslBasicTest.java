@@ -4,9 +4,8 @@ package com.querydsl;
 import com.querydsl.core.Tuple;
 import com.querydsl.entity.Member;
 import com.querydsl.entity.QMember;
-import com.querydsl.entity.QTeam;
 import com.querydsl.entity.Team;
-import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 
 import java.util.List;
@@ -411,5 +409,111 @@ public class QuerydslBasicTest {
 
         boolean loaded02 = emf.getPersistenceUnitUtil().isLoaded(result02.getTeam());
         assertThat(loaded02).as("페지 조인 적용").isTrue();
+    }
+
+
+    /**
+     * 01. 나이가 가장 많은 회원 조회
+    **/
+    @Test
+    @DisplayName("queryDsl_subQuery_TEST01")
+    void queryDslSubQueryTest01(){
+
+        // subQuery = JPAExpressions
+
+        QMember subMember = new QMember("memberSub");
+
+        List<Member> result01 = queryDsl
+                .selectFrom(member)
+                .where(member.age.eq(
+                        JPAExpressions
+                                .select(subMember.age.max())
+                                .from(subMember)
+                ))
+                .fetch();
+
+        assertThat(result01).extracting("age")
+                .containsExactly(40);
+    }
+
+    /**
+     * 02. 나이가 평균 이상인 회원 조회
+    **/
+
+    @Test
+    @DisplayName("queryDsl_subQuery_TEST02")
+    void queryDslSubQueryTest02(){
+
+
+        QMember subMember = new QMember("memberSub");
+
+        List<Member> result02 = queryDsl
+                .selectFrom(member)
+                .where(member.age.goe(
+                        JPAExpressions
+                                .select(subMember.age.avg())
+                                .from(subMember)
+                ))
+                .fetch();
+
+        for(Member member : result02) {
+            System.out.println("member = " + member);
+        }
+    }
+
+    /**
+     * 03. 서브 쿼리 in - 나이가 10살 보다 큰 나이 값에 나이가 속하는 모든 회원 조회
+    **/
+    @Test
+    @DisplayName("queryDsl_subQuery_TEST03")
+    void queryDslSubQueryTest03(){
+        QMember subMember = new QMember("memberSub");
+
+        List<Member> result03 = queryDsl
+                .selectFrom(member)
+                .where(member.age.in(
+                        // Member Age 중 10 보다 큰 age 값 서브쿼리
+                        JPAExpressions
+                                .select(subMember.age)
+                                .from(subMember)
+                                .where(subMember.age.gt(10))
+                ))
+                .fetch();
+
+        for(Member member : result03) {
+            System.out.println("member = " + member);
+        }
+    }
+
+    /**
+     * 04. select 절에 서브 쿼리
+    **/
+    @Test
+    @DisplayName("queryDsl_select_subQuery_TEST04")
+    void queryDslSubQueryTest04(){
+
+        QMember subMember = new QMember("subMember");
+
+        List<Tuple> result = queryDsl
+                .select(member.name,
+                        // member 나이의 평균 값
+                        JPAExpressions
+                                .select(subMember.age.avg())
+                                .from(subMember))
+                .from(member)
+                .fetch();
+
+        for(Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+
+
+        // JPA JPQL 서브 쿼리의 한계점 으로 from 절의 서브 쿼리는 지원 하지 않음
+        // 따라서 JPQL 의 빌더 역할인 QueryDsl 또한 서브 쿼리 지원 x
+
+        // from 절의 서브 쿼리 해결방안
+        // - 서브 쿼리를 join 으로 변경
+        // - 애플리케이션에서 쿼리를 2번 분리 해서 실행
+
     }
 }
