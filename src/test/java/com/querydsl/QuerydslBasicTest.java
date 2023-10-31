@@ -155,6 +155,64 @@ public class QuerydslBasicTest {
         assertThat(members.get(0).getName()).isEqualTo("member5");
         assertThat(members.get(1).getName()).isEqualTo("member6");
         assertThat(members.get(2).getName()).isNull();
+    }
 
+    @Test
+    @DisplayName("queryDsl_paging_TEST")
+    void queryDslPagingTest(){
+
+        // member1 ~ member 4
+        // offset : 시작 행(데이터), limit : offset 으로 부터 조회할 수
+
+
+        /* 1. 전체 Member 조푀 */
+        List<Member> allMembers = queryDsl
+                .selectFrom(member)
+                .orderBy(member.name.desc())
+                .fetch();
+
+        for (Member m : allMembers) {
+            System.out.println(m.getName());
+        }
+
+
+
+        /* 2. 1번째 데이터 부터 2개 조회 */
+        List<Member> members = queryDsl
+                .selectFrom(member)
+                .orderBy(member.name.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+
+        assertThat(members.size()).isEqualTo(2);
+        System.out.println("offset = 1, limit = 2");
+        for(Member m : members) {
+            System.out.println("m.getName() = " + m.getName());
+            System.out.println("m.getAge() = " + m.getAge());
+        }
+        System.out.println(members.size());
+
+        // member3, member2
+        assertThat(members.get(0).getName()).isEqualTo("member3");
+
+
+
+        // 3. 3번째 데이터 부터 2개 조회 */
+        List<Member> members02 = queryDsl
+                .selectFrom(member)
+                .orderBy(member.name.desc())
+                .offset(3)
+                .limit(2)
+                .fetch();
+        
+        System.out.println("offset = 3, limit = 2");
+        for(Member m : members02) {
+            System.out.println("m.getName() = " + m.getName());
+            System.out.println("m.getAge() = " + m.getAge());
+        }
+        System.out.println(members02.size());
+
+        assertThat(members02.size()).isEqualTo(1);
     }
 }
