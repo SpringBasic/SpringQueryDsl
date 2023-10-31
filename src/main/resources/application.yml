@@ -9,18 +9,18 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3309/querydsl_db?&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
     username: root
-    password: ${DATABASE_PASSWORD}
+    password: 1234
 
   jpa:
     hibernate:
       ddl-auto: create
+
     properties:
       hibernate:
+        format_sql: true
+#        use_sql_comments: true
         show_sql: true
-
-
-
-logging:
-  level:
-    org.hibernate.sql: debug
-    org.hibernate.type: trace
+#logging:
+#  level:
+#    org.hibernate.sql: debug
+#    org.hibernate.type: trace
