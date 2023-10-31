@@ -16,6 +16,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceUnit;
 
 import java.util.List;
 
@@ -371,5 +374,42 @@ public class QuerydslBasicTest {
         }
 
         // 결과 : innerJoin 이기 때문에 member.name = team.name 인 경우 가져옴
+    }
+
+
+    @PersistenceUnit
+    EntityManagerFactory emf;
+
+    @Test
+    @DisplayName("queryDsl_fetch_join_TEST")
+    void queryDslFetchJoinTest(){
+
+        em.flush();
+        em.clear();
+
+        Member result = queryDsl
+                .selectFrom(member)
+                .where(member.name.eq("member1"))
+                .fetchOne();
+
+        System.out.println("result = " + result);
+
+        // 해당 엔티티가 영속성 컨텍스트에 로딩이 된 엔티티인지 확인
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(result.getTeam());
+        assertThat(loaded).as("페치 조인 미적용").isFalse();
+
+
+        em.flush();
+        em.clear();
+
+        Member result02 = queryDsl
+                .selectFrom(member)
+                .join(member.team, team).fetchJoin()
+                .where(member.name.eq("member1"))
+                .fetchOne();
+
+
+        boolean loaded02 = emf.getPersistenceUnitUtil().isLoaded(result02.getTeam());
+        assertThat(loaded02).as("페지 조인 적용").isTrue();
     }
 }
