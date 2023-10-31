@@ -3,6 +3,7 @@ package com.querydsl;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.entity.Member;
 import com.querydsl.entity.QMember;
@@ -590,5 +591,41 @@ public class QuerydslBasicTest {
 
             System.out.println("name = " + name + " age = " + age + " rank = " + rank);
         }
+    }
+
+    /**
+     * - 상수 실습 : 회원 조회 시 열 'A' 추가
+    **/
+    @Test
+    @DisplayName("queryDsl_constant_TEST01")
+    void queryDslConstantTest01(){
+        List<Tuple> result = queryDsl
+                .select(member.name, Expressions.constant("A"))
+                .from(member)
+                .fetch();
+        
+        for(Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    /**
+     * - 문자 더하기 실습(조회 데이터에 문자 더하기)
+    **/
+    @Test
+    @DisplayName("queryDsl_concat_TEST")
+    void queryDslConcatTest(){
+
+        List<String> result = queryDsl
+                // age 는 Int -> StringValue() 사용
+                .select(member.name.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .where(member.age.eq(10))
+                .fetch();
+
+        System.out.println("result = " + result);
+
+        assertThat(result).isNotNull();
+        assertThat(result.get(0)).isEqualTo("member1_10");
     }
 }
