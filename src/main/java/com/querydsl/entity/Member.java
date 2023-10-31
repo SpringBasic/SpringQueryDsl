@@ -32,6 +32,11 @@ public class Member {
     }
 
     @Builder
+    public Member(String name) {
+        this.name = name;
+    }
+
+    @Builder
     public Member(String name, int age) {
         this.name = name;
         this.age = age;

@@ -1,9 +1,12 @@
 package com.querydsl;
 
 
+import com.querydsl.core.Tuple;
 import com.querydsl.entity.Member;
 import com.querydsl.entity.QMember;
+import com.querydsl.entity.QTeam;
 import com.querydsl.entity.Team;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +20,7 @@ import javax.persistence.EntityManager;
 import java.util.List;
 
 import static com.querydsl.entity.QMember.member;
+import static com.querydsl.entity.QTeam.team;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -214,5 +218,82 @@ public class QuerydslBasicTest {
         System.out.println(members02.size());
 
         assertThat(members02.size()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("queryDsl_aggregation_TEST")
+    void queryDslAggregationTest(){
+
+        // queryDsl.select() 결과는 Member 가 아니라 여러 열이 합쳐진 대상
+        // 실무 에서는 tuple 말고 dto 로 바로 변환해서 사용
+        List<Tuple> result = queryDsl
+                .select(
+                        member.count(), // 4
+                        member.age.sum(), // 100
+                        member.age.avg(), // 25.0
+                        member.age.max(), // 40
+                        member.age.min() // 10
+                ).from(member)
+                .fetch();
+
+        System.out.println(result.size());
+        for (Tuple tuple : result) {
+            System.out.println(tuple);
+        }
+    }
+
+    @Test
+    @DisplayName("queryDsl_groupBy_TEST")
+    void queryDslGroupByTest(){
+
+        List<Tuple> result02 = queryDsl
+                .select(team.name, member.age.avg())
+                .from(member)
+                .join(member.team, team)
+                .groupBy(team.name)
+                .fetch();
+
+        for (Tuple tuple : result02) {
+            System.out.println(tuple);
+        }
+    }
+
+    @Test
+    @DisplayName("queryDsl_join_TEST")
+    void queryDslJoinTest(){
+
+        // join(조인 대상, 별칭 으로 사용할 Q타입)
+        List<Member> result = queryDsl
+                .selectFrom(member)
+                .join(member.team, team) // member 와 연관 관계 있는 team join
+                .where(team.name.eq("teamA"))
+                .fetch();
+
+        for(Member member : result) {
+            System.out.println(member);
+        }
+
+        // name 칼럼 데이터 가져오기
+        assertThat(result).extracting("name").containsExactly("member1","member2");
+    }
+
+    @Test
+    @DisplayName("queryDsl_theta_join_TEST")
+    void queryDslThetaJoinTest(){
+
+        // 연관 관계 없는 필드로 join = theta join
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+
+        List<Member> result = queryDsl
+                .select(member)
+                .from(member, team) // theta join
+                .where(member.name.eq(team.name))
+                .fetch();
+
+
+        for(Member member : result) {
+            System.out.println(member);
+        }
     }
 }
