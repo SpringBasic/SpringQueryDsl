@@ -113,6 +113,8 @@ public class QuerydslBasicTest {
     @DisplayName("queryDsl_result_TEST")
     void queryDslResultTest(){
 
+        // fetch,fetchOne,fetchFirst
+
         List<Member> members = queryDsl.selectFrom(member)
                 .fetch();
 
@@ -124,5 +126,35 @@ public class QuerydslBasicTest {
                 .fetchFirst();
 
         assertThat(members.size()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("queryDsl_sort_TEST")
+    void queryDslSortTest(){
+
+        /**
+         * 1. 회원 나이 내림차순(desc)
+         * 2. 회원 이름 오름차순(asc)
+         * 단 2에서 회원 이름이 없으면 마지막 출력
+        **/
+
+        em.persist(new Member(null,100));
+        em.persist(new Member("member5",100));
+        em.persist(new Member("member6",100));
+
+        List<Member> members = queryDsl
+                .selectFrom(member)
+                .where(member.age.eq(100)) // member 5, member 6
+                .orderBy(member.age.desc(), member.name.asc().nullsLast())
+                .fetch();
+
+        for(Member member : members) {
+            System.out.println("member = " + member);
+            System.out.println("member.getName() = " + member.getName());
+        }
+        assertThat(members.get(0).getName()).isEqualTo("member5");
+        assertThat(members.get(1).getName()).isEqualTo("member6");
+        assertThat(members.get(2).getName()).isNull();
+
     }
 }

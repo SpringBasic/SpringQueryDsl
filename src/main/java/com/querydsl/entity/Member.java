@@ -31,6 +31,12 @@ public class Member {
         }
     }
 
+    @Builder
+    public Member(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
     private void changeTeam(Team team) {
         this.team = team;
         team.getMembers().add(this); // 객체 지향
