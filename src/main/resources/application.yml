@@ -20,7 +20,7 @@ spring:
         format_sql: true
 #        use_sql_comments: true
         show_sql: true
-#logging:
-#  level:
+logging:
+  level:
 #    org.hibernate.sql: debug
-#    org.hibernate.type: trace
+    org.hibernate.type: trace
