@@ -2,6 +2,8 @@ package com.querydsl;
 
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.entity.Member;
 import com.querydsl.entity.QMember;
 import com.querydsl.entity.Team;
@@ -515,5 +517,78 @@ public class QuerydslBasicTest {
         // - 서브 쿼리를 join 으로 변경
         // - 애플리케이션에서 쿼리를 2번 분리 해서 실행
 
+    }
+
+    @Test
+    @DisplayName("queryDsl_case_TEST01")
+    void queryDslCaseTest01(){
+        List<String> result = queryDsl
+                .select(member.age
+                        .when(10).then("10살")
+                        .when(20).then("20살")
+                        .otherwise("기타")
+                )
+                .from(member)
+                .fetch();
+
+        for(String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    /**
+     * - 복잡한 조건인 경우
+    **/
+    @Test
+    @DisplayName("queryDsl_case_TEST02")
+    void queryDslCaseTest02(){
+
+        List<String> result = queryDsl
+                .select(new CaseBuilder()
+                        .when(member.age.between(10, 20)).then("0 ~ 20 살")
+                        .when(member.age.between(21, 30)).then("21살 ~ 30살")
+                        .otherwise("기타"))
+                .from(member)
+                .fetch();
+
+        for (int i = 0; i < result.size() ; i++) {
+            System.out.println("result.get(i) = " + result.get(i));
+        }
+
+        // DB 는 그냥 최소한의 필터링 그룹화
+        // case 는 application / presentation layer 에서 이런 로직 처리하는 것이 이상
+    }
+
+
+    /**
+     * - 0 ~ 30 살이 아닌 회원을 가장 먼저 출력
+     * - 0 ~ 20 살 회원을 2번째로 출력
+     * - 21 ~ 30 살 회원을 3번째로 출력
+     */
+    @Test
+    @DisplayName("queryDsl_case_TEST03")
+    void queryDslCaseTest03(){
+
+        // 추후 숫자가 높은 것부터 출력 예정
+        NumberExpression<Integer> rankPath = new CaseBuilder()
+                .when(member.age.between(21,30)).then(1)
+                .when(member.age.between(0,20)).then(2)
+                .otherwise(3);
+
+        List<Tuple> result = queryDsl
+                // member 이름, member 나이, 순서
+                .select(member.name, member.age, rankPath)
+                .from(member)
+                // 순서가 높은 것 부터
+                .orderBy(rankPath.desc())
+                .fetch();
+
+        for(Tuple tuple : result) {
+            String name = tuple.get(member.name);
+            Integer age = tuple.get(member.age);
+            Integer rank = tuple.get(rankPath);
+
+            System.out.println("name = " + name + " age = " + age + " rank = " + rank);
+        }
     }
 }
