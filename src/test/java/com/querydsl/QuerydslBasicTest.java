@@ -4,7 +4,9 @@ package com.querydsl;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
@@ -803,7 +805,7 @@ public class QuerydslBasicTest {
     @Test
     public void dynamicQuery_BooleanBuilder() {
         String nameParam = "member1";
-        Integer ageParam = null;
+        Integer ageParam = 10;
 
         List<Member> result = searchMember1(nameParam,ageParam);
         // 파라미터가 null 인지 아닌지 따라 결과물이 달라짐
@@ -827,5 +829,29 @@ public class QuerydslBasicTest {
                 .selectFrom(member)
                 .where(builder)
                 .fetch();
+    }
+
+    @Test
+    public void dynamicQuery_WhereParam() {
+        String nameParam = "member1";
+        Integer ageParam = null;
+
+        List<Member> result = searchMember2(nameParam,ageParam);
+    }
+
+    private List<Member> searchMember2(String nameParam, Integer ageParam) {
+        return queryDsl
+                .selectFrom(member)
+                // where 절이 null 일때 무시
+                .where(usernameEq(nameParam), ageEq(ageParam))
+                .fetch();
+    }
+
+    private BooleanExpression usernameEq(String nameParam) {
+        return nameParam == null ? null : member.name.eq(nameParam);
+    }
+
+    private BooleanExpression ageEq(Integer ageParam) {
+        return ageParam == null ? null : member.age.eq(ageParam);
     }
 }
