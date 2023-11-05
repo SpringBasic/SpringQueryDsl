@@ -2,9 +2,13 @@ package com.querydsl;
 
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.dto.MemberDto;
+import com.querydsl.dto.UserDto;
 import com.querydsl.entity.Member;
 import com.querydsl.entity.QMember;
 import com.querydsl.entity.Team;
@@ -20,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
-
 import java.util.List;
 
 import static com.querydsl.entity.QMember.member;
@@ -55,11 +58,17 @@ public class QuerydslBasicTest {
 
         Member member3 = new Member("member3", 30, teamB);
         Member member4 = new Member("member4", 40, teamB);
+        Member member5 = new Member(null, 40, teamB);
+        Member member6 = new Member(null, 30, teamA);
+        Member member7 = new Member("member5",40,teamA);
 
         em.persist(member1);
         em.persist(member2);
         em.persist(member3);
         em.persist(member4);
+        em.persist(member5);
+        em.persist(member6);
+        em.persist(member7);
     }
 
 
@@ -119,7 +128,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("queryDsl_result_TEST")
-    void queryDslResultTest(){
+    void queryDslResultTest() {
 
         // fetch,fetchOne,fetchFirst
 
@@ -138,17 +147,17 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("queryDsl_sort_TEST")
-    void queryDslSortTest(){
+    void queryDslSortTest() {
 
         /**
          * 1. 회원 나이 내림차순(desc)
          * 2. 회원 이름 오름차순(asc)
          * 단 2에서 회원 이름이 없으면 마지막 출력
-        **/
+         **/
 
-        em.persist(new Member(null,100));
-        em.persist(new Member("member5",100));
-        em.persist(new Member("member6",100));
+        em.persist(new Member(null, 100));
+        em.persist(new Member("member5", 100));
+        em.persist(new Member("member6", 100));
 
         List<Member> members = queryDsl
                 .selectFrom(member)
@@ -156,7 +165,7 @@ public class QuerydslBasicTest {
                 .orderBy(member.age.desc(), member.name.asc().nullsLast())
                 .fetch();
 
-        for(Member member : members) {
+        for (Member member : members) {
             System.out.println("member = " + member);
             System.out.println("member.getName() = " + member.getName());
         }
@@ -167,7 +176,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("queryDsl_paging_TEST")
-    void queryDslPagingTest(){
+    void queryDslPagingTest() {
 
         // member1 ~ member 4
         // offset : 시작 행(데이터), limit : offset 으로 부터 조회할 수
@@ -195,7 +204,7 @@ public class QuerydslBasicTest {
 
         assertThat(members.size()).isEqualTo(2);
         System.out.println("offset = 1, limit = 2");
-        for(Member m : members) {
+        for (Member m : members) {
             System.out.println("m.getName() = " + m.getName());
             System.out.println("m.getAge() = " + m.getAge());
         }
@@ -205,7 +214,6 @@ public class QuerydslBasicTest {
         assertThat(members.get(0).getName()).isEqualTo("member3");
 
 
-
         // 3. 3번째 데이터 부터 2개 조회 */
         List<Member> members02 = queryDsl
                 .selectFrom(member)
@@ -213,9 +221,9 @@ public class QuerydslBasicTest {
                 .offset(3)
                 .limit(2)
                 .fetch();
-        
+
         System.out.println("offset = 3, limit = 2");
-        for(Member m : members02) {
+        for (Member m : members02) {
             System.out.println("m.getName() = " + m.getName());
             System.out.println("m.getAge() = " + m.getAge());
         }
@@ -226,7 +234,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("queryDsl_aggregation_TEST")
-    void queryDslAggregationTest(){
+    void queryDslAggregationTest() {
 
         // queryDsl.select() 결과는 Member 가 아니라 여러 열이 합쳐진 대상
         // 실무 에서는 tuple 말고 dto 로 바로 변환해서 사용
@@ -248,7 +256,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("queryDsl_groupBy_TEST")
-    void queryDslGroupByTest(){
+    void queryDslGroupByTest() {
 
         List<Tuple> result02 = queryDsl
                 .select(team.name, member.age.avg())
@@ -264,7 +272,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("queryDsl_join_TEST")
-    void queryDslJoinTest(){
+    void queryDslJoinTest() {
 
         // join(조인 대상, 별칭 으로 사용할 Q타입)
         List<Member> result = queryDsl
@@ -273,17 +281,17 @@ public class QuerydslBasicTest {
                 .where(team.name.eq("teamA"))
                 .fetch();
 
-        for(Member member : result) {
+        for (Member member : result) {
             System.out.println(member);
         }
 
         // name 칼럼 데이터 가져오기
-        assertThat(result).extracting("name").containsExactly("member1","member2");
+        assertThat(result).extracting("name").containsExactly("member1", "member2");
     }
 
     @Test
     @DisplayName("queryDsl_theta_join_TEST")
-    void queryDslThetaJoinTest(){
+    void queryDslThetaJoinTest() {
 
         // 연관 관계 없는 필드습 join = theta join
         em.persist(new Member("teamA"));
@@ -296,14 +304,14 @@ public class QuerydslBasicTest {
                 .fetch();
 
 
-        for(Member member : result) {
+        for (Member member : result) {
             System.out.println(member);
         }
     }
 
     @Test
     @DisplayName("queryDsl_join_on_TEST")
-    void queryDslJoinOnTest(){
+    void queryDslJoinOnTest() {
 
         // 회원과 팀 조회 하면서, 팀 이름이 teamA 인 팀만 조인, 회원은 모두 조회
         // jpql : select m, t from Member m left join m.team t on t.name = 'teamA';
@@ -315,7 +323,7 @@ public class QuerydslBasicTest {
                 .on(team.name.eq("teamA"))
                 .fetch();
 
-        for(Tuple tuple: result01) {
+        for (Tuple tuple : result01) {
             System.out.println("tuple = " + tuple);
         }
 
@@ -328,7 +336,7 @@ public class QuerydslBasicTest {
                 .where(team.name.eq("teamA"))
                 .fetch();
 
-        for(Tuple tuple : result02) {
+        for (Tuple tuple : result02) {
             System.out.println("tuple = " + tuple);
         }
     }
@@ -337,10 +345,10 @@ public class QuerydslBasicTest {
     /**
      * - 연관관계 없는 필드로 조인 하는 실습
      * ex) 회원의 이름과 팀 이름이 같은 대상 외부 조인
-    **/
+     **/
     @Test
     @DisplayName("queryDsl_no_relation_join_on_TEST")
-    void queryDslNoRelationJoinOnTest(){
+    void queryDslNoRelationJoinOnTest() {
 
         // jpql :  select m,t from Member m left join Team t on m.name = t.name
         em.persist(new Member("teamA"));
@@ -354,11 +362,11 @@ public class QuerydslBasicTest {
                 .on(member.name.eq(team.name))
                 .fetch();
 
-        for(Tuple tuple : result) {
+        for (Tuple tuple : result) {
             System.out.println("tuple = " + tuple);
         }
-        
-        
+
+
         // 결과 : leftJoin 이기 때문에 모든 Member 엔티티 가져 오고,
         // member.name = team.name 인 경우 team 엔티티 가져 옴
 
@@ -369,8 +377,8 @@ public class QuerydslBasicTest {
                 .innerJoin(team)
                 .on(member.name.eq(team.name))
                 .fetch();
-        
-        for(Tuple tuple : result02) {
+
+        for (Tuple tuple : result02) {
             System.out.println("tuple = " + tuple);
         }
 
@@ -383,7 +391,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("queryDsl_fetch_join_TEST")
-    void queryDslFetchJoinTest(){
+    void queryDslFetchJoinTest() {
 
         em.flush();
         em.clear();
@@ -417,10 +425,10 @@ public class QuerydslBasicTest {
 
     /**
      * 01. 나이가 가장 많은 회원 조회
-    **/
+     **/
     @Test
     @DisplayName("queryDsl_subQuery_TEST01")
-    void queryDslSubQueryTest01(){
+    void queryDslSubQueryTest01() {
 
         // subQuery = JPAExpressions
 
@@ -441,11 +449,11 @@ public class QuerydslBasicTest {
 
     /**
      * 02. 나이가 평균 이상인 회원 조회
-    **/
+     **/
 
     @Test
     @DisplayName("queryDsl_subQuery_TEST02")
-    void queryDslSubQueryTest02(){
+    void queryDslSubQueryTest02() {
 
 
         QMember subMember = new QMember("memberSub");
@@ -459,17 +467,17 @@ public class QuerydslBasicTest {
                 ))
                 .fetch();
 
-        for(Member member : result02) {
+        for (Member member : result02) {
             System.out.println("member = " + member);
         }
     }
 
     /**
      * 03. 서브 쿼리 in - 나이가 10살 보다 큰 나이 값에 나이가 속하는 모든 회원 조회
-    **/
+     **/
     @Test
     @DisplayName("queryDsl_subQuery_TEST03")
-    void queryDslSubQueryTest03(){
+    void queryDslSubQueryTest03() {
         QMember subMember = new QMember("memberSub");
 
         List<Member> result03 = queryDsl
@@ -483,17 +491,17 @@ public class QuerydslBasicTest {
                 ))
                 .fetch();
 
-        for(Member member : result03) {
+        for (Member member : result03) {
             System.out.println("member = " + member);
         }
     }
 
     /**
      * 04. select 절에 서브 쿼리
-    **/
+     **/
     @Test
     @DisplayName("queryDsl_select_subQuery_TEST04")
-    void queryDslSubQueryTest04(){
+    void queryDslSubQueryTest04() {
 
         QMember subMember = new QMember("subMember");
 
@@ -506,7 +514,7 @@ public class QuerydslBasicTest {
                 .from(member)
                 .fetch();
 
-        for(Tuple tuple : result) {
+        for (Tuple tuple : result) {
             System.out.println("tuple = " + tuple);
         }
 
@@ -522,7 +530,7 @@ public class QuerydslBasicTest {
 
     @Test
     @DisplayName("queryDsl_case_TEST01")
-    void queryDslCaseTest01(){
+    void queryDslCaseTest01() {
         List<String> result = queryDsl
                 .select(member.age
                         .when(10).then("10살")
@@ -532,17 +540,17 @@ public class QuerydslBasicTest {
                 .from(member)
                 .fetch();
 
-        for(String s : result) {
+        for (String s : result) {
             System.out.println("s = " + s);
         }
     }
 
     /**
      * - 복잡한 조건인 경우
-    **/
+     **/
     @Test
     @DisplayName("queryDsl_case_TEST02")
-    void queryDslCaseTest02(){
+    void queryDslCaseTest02() {
 
         List<String> result = queryDsl
                 .select(new CaseBuilder()
@@ -552,7 +560,7 @@ public class QuerydslBasicTest {
                 .from(member)
                 .fetch();
 
-        for (int i = 0; i < result.size() ; i++) {
+        for (int i = 0; i < result.size(); i++) {
             System.out.println("result.get(i) = " + result.get(i));
         }
 
@@ -568,12 +576,12 @@ public class QuerydslBasicTest {
      */
     @Test
     @DisplayName("queryDsl_case_TEST03")
-    void queryDslCaseTest03(){
+    void queryDslCaseTest03() {
 
         // 추후 숫자가 높은 것부터 출력 예정
         NumberExpression<Integer> rankPath = new CaseBuilder()
-                .when(member.age.between(21,30)).then(1)
-                .when(member.age.between(0,20)).then(2)
+                .when(member.age.between(21, 30)).then(1)
+                .when(member.age.between(0, 20)).then(2)
                 .otherwise(3);
 
         List<Tuple> result = queryDsl
@@ -584,7 +592,7 @@ public class QuerydslBasicTest {
                 .orderBy(rankPath.desc())
                 .fetch();
 
-        for(Tuple tuple : result) {
+        for (Tuple tuple : result) {
             String name = tuple.get(member.name);
             Integer age = tuple.get(member.age);
             Integer rank = tuple.get(rankPath);
@@ -595,26 +603,26 @@ public class QuerydslBasicTest {
 
     /**
      * - 상수 실습 : 회원 조회 시 열 'A' 추가
-    **/
+     **/
     @Test
     @DisplayName("queryDsl_constant_TEST01")
-    void queryDslConstantTest01(){
+    void queryDslConstantTest01() {
         List<Tuple> result = queryDsl
                 .select(member.name, Expressions.constant("A"))
                 .from(member)
                 .fetch();
-        
-        for(Tuple tuple : result) {
+
+        for (Tuple tuple : result) {
             System.out.println("tuple = " + tuple);
         }
     }
 
     /**
      * - 문자 더하기 실습(조회 데이터에 문자 더하기)
-    **/
+     **/
     @Test
     @DisplayName("queryDsl_concat_TEST")
-    void queryDslConcatTest(){
+    void queryDslConcatTest() {
 
         List<String> result = queryDsl
                 // age 는 Int -> StringValue() 사용
@@ -627,5 +635,146 @@ public class QuerydslBasicTest {
 
         assertThat(result).isNotNull();
         assertThat(result.get(0)).isEqualTo("member1_10");
+    }
+
+    @Test
+    void queryDslOrderByTest() {
+        List<Member> result = queryDsl
+                .selectFrom(member)
+                .orderBy(member.age.desc(), member.name.asc().nullsLast())
+                .fetch();
+
+        for(Member member : result) {
+            System.out.println("member = " + member);
+        }
+
+        // member.name.asc().nullsLast() 의 의미 :
+        // 나이 가 동일할 때, 이름으로 정렬 기준을 잡는데, 이때 null 이면 해당 나이 기준 순서 범위에서 마지막
+        // ex)
+        // member(id = 4, name = member4, age = 40)
+        // member(id = 7, name = member5, age = 40)
+        // member(id = 5, name = null, age = 40)
+        // member(id = 6, name = member3, age = 30)
+        // ...
+    }
+
+
+    // 프로젝션 : sql 에서 select 대상
+
+    @Test
+    @DisplayName("queryDsl_projection_test")
+    void queryDslProjectionTest(){
+        // select 절의 타입이 단건이 아니면 Tuple OR Dto 사용
+        List<Tuple> result = queryDsl
+                .select(member.name, member.age)
+                .from(member)
+                .fetch();
+
+        for(Tuple tuple : result) {
+            // tuple.get(열의 이름)
+            String name = tuple.get(member.name);
+            Integer age = tuple.get(member.age);
+            System.out.println("name = " + name);
+            System.out.println("age = " + age);
+        }
+    }
+
+    @Test
+    public void findDtoByJPQL() {
+        // 순수 JPA 에서 jpql 을 사용해서 dto 로 받기 위해서는 dto 생성자 호출하는 것 처럼 사용
+        Member result = em.createQuery("select new com.querydsl.dto.MemberDto(m.name, m.age) from Member m", Member.class)
+                .getSingleResult();
+    }
+
+    /**
+     * queryDsl 에서는 결과를 DTO 로 반환할 때 3가지 방법 지원
+     * - 프로퍼티 접근(setter)
+     * - 필드 직접 접근
+     * - 생성자 사용
+    **/
+    @Test
+    public void findDtoByQueryDslSetter() {
+        // 1. 프로퍼티 접근을 이용한 프로젝션
+        List<MemberDto> result = queryDsl
+                // setter 을 사용하기 위해서 Projections 사용
+                .select(Projections.bean(MemberDto.class,
+                        member.name,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for(MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+    
+    
+    @Test
+    public void findDtoByQueryDslField() {
+        // 2. 필드 접근을 이용한 프로젝션
+        List<MemberDto> result = queryDsl
+                .select(Projections.fields(MemberDto.class,
+                        member.name,
+                        member.age))
+                .from(member)
+                .fetch();
+        
+        for(MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findDtoByQueryDslConstructor() {
+        // 3. 생성자를 이용한 프로젝션
+        List<MemberDto> result = queryDsl
+                .select(Projections.constructor(MemberDto.class,
+                        member.name,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for(MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findDtoByQueryDslUsingDifferentName() {
+        // 4. 엔티티의 필드명과 응답 DTO 필드명이 다른 경우
+        List<UserDto> result = queryDsl
+                .select(Projections.fields(UserDto.class,
+                        member.name.as("username"),
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
+    @Test
+    public void findDyoByQueryDslUsingDifferentNameUsingExpressionUtils() {
+        // 5. ExpressionUtil + Dto Projections
+        QMember subMember = new QMember("subMember");
+
+        List<Tuple> result = queryDsl
+                .select(Projections.fields(UserDto.class),
+                        member.name.as("username"),
+                        // ExpressionUtils -> 서브 쿼리 결과 별칭 적용
+                        ExpressionUtils.as(
+                                JPAExpressions
+                                        .select(subMember.age.max())
+                                        .from(subMember), "age"
+                        ))
+                .from(member)
+                .fetch();
+
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple.get(member.name) = " + tuple.get(member.name));
+            System.out.println("tuple.get(member.age) = " + tuple.get(member.age));
+        }
     }
 }
