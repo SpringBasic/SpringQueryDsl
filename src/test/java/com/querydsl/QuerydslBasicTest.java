@@ -23,6 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
@@ -853,5 +854,53 @@ public class QuerydslBasicTest {
 
     private BooleanExpression ageEq(Integer ageParam) {
         return ageParam == null ? null : member.age.eq(ageParam);
+    }
+
+
+    // 벌크 연산 -> 배치 쿼리
+    @Test
+    public void bulkCalculation01() {
+        // 일반적인 변경 감지는 하나씩 수정 쿼리가 생성 -> 벌크 연산 별도 추가 해야 함
+        long result = queryDsl
+                .update(member)
+                .set(member.name, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        // 벌크 연산을 하면 영속성 컨텍스트 초기화 필수
+        em.flush();
+        em.clear();
+
+        /**
+         * 벌크 연산의 주의점
+         * - 1. 영속성 컨텍스트를 거치지 않고 바로 DB sql 쿼리를 날린다.
+         * - 2. 영속성 컨텍스트와 DB 상태가 달라짐
+         * - 3. 영속성 컨텍스트가 우선
+        **/
+
+
+        // 영속성 컨텍스트에서 데이터를 가져 온다
+        List<Member> members = queryDsl
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member : members) {
+            System.out.println("member = " + member);
+        }
+    }
+
+    @Test
+    public void bulkCalculation02() {
+        // 모든 회원 나이 + 1
+        queryDsl
+                .update(member)
+                .set(member.age, member.age.add(1))
+                .execute();
+
+        // 50 살 이상 회원 삭제
+        queryDsl
+                .delete(member)
+                .where(member.age.gt(50))
+                .execute();
     }
 }
