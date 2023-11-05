@@ -8,6 +8,7 @@ import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.dto.MemberDto;
+import com.querydsl.dto.QMemberDto;
 import com.querydsl.dto.UserDto;
 import com.querydsl.entity.Member;
 import com.querydsl.entity.QMember;
@@ -58,8 +59,8 @@ public class QuerydslBasicTest {
 
         Member member3 = new Member("member3", 30, teamB);
         Member member4 = new Member("member4", 40, teamB);
-        Member member5 = new Member(null, 40, teamB);
-        Member member6 = new Member(null, 30, teamA);
+        Member member5 = new Member("member4", 40, teamB);
+        Member member6 = new Member("member6", 30, teamA);
         Member member7 = new Member("member5",40,teamA);
 
         em.persist(member1);
@@ -755,7 +756,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void findDyoByQueryDslUsingDifferentNameUsingExpressionUtils() {
+    public void findDtoByQueryDslUsingDifferentNameUsingExpressionUtils() {
         // 5. ExpressionUtil + Dto Projections
         QMember subMember = new QMember("subMember");
 
@@ -776,5 +777,23 @@ public class QuerydslBasicTest {
             System.out.println("tuple.get(member.name) = " + tuple.get(member.name));
             System.out.println("tuple.get(member.age) = " + tuple.get(member.age));
         }
+    }
+
+    // @QueryProjection 사용
+    @Test
+    public void findDyoByQueryDslUsingQueryProjection() {
+        List<MemberDto> result = queryDsl
+                .select(new QMemberDto(member.name, member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+        // Projections.constructor 와 보다 좋음 -> 컴파일 오류를 잡아낼 수 있다.
+
+        // 단점 :
+        // 1. Q 파일을 추가적으로 생성해야 한다.
+        // 2. Dto 가 QueryDsl 에 대한 의존성이 생긴다.(순수 x)
     }
 }
