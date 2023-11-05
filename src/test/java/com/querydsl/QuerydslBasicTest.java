@@ -1,6 +1,7 @@
 package com.querydsl;
 
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
@@ -55,6 +56,7 @@ public class QuerydslBasicTest {
         em.persist(teamB);
 
         Member member1 = new Member("member1", 10, teamA);
+        Member member8 = new Member("member1", 80, teamA);
         Member member2 = new Member("member2", 20, teamA);
 
         Member member3 = new Member("member3", 30, teamB);
@@ -70,6 +72,7 @@ public class QuerydslBasicTest {
         em.persist(member5);
         em.persist(member6);
         em.persist(member7);
+        em.persist(member8);
     }
 
 
@@ -795,5 +798,34 @@ public class QuerydslBasicTest {
         // 단점 :
         // 1. Q 파일을 추가적으로 생성해야 한다.
         // 2. Dto 가 QueryDsl 에 대한 의존성이 생긴다.(순수 x)
+    }
+
+    @Test
+    public void dynamicQuery_BooleanBuilder() {
+        String nameParam = "member1";
+        Integer ageParam = null;
+
+        List<Member> result = searchMember1(nameParam,ageParam);
+        // 파라미터가 null 인지 아닌지 따라 결과물이 달라짐
+        // nameParam = "member1", ageParam = null & nameParam = null, ageParam = 10
+        assertThat(result.size()).isEqualTo(2);
+    }
+
+    private List<Member> searchMember1(String nameParam, Integer ageParam) {
+
+        BooleanBuilder builder = new BooleanBuilder();
+        // BooleanBuilder 을 통해 동적 쿼리 작성
+        if(nameParam != null) {
+            builder.and(member.name.eq(nameParam));
+        }
+
+        if(ageParam != null) {
+            builder.and(member.age.eq(ageParam));
+        }
+
+        return queryDsl
+                .selectFrom(member)
+                .where(builder)
+                .fetch();
     }
 }
