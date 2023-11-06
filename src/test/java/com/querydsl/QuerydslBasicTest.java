@@ -903,4 +903,12 @@ public class QuerydslBasicTest {
                 .where(member.age.gt(50))
                 .execute();
     }
+
+    @Test
+    public void queryDslSQLFunction() {
+        queryDsl
+                .select(member.name)
+                .from(member)
+                .where(member.name.eq(Expressions.stringTemplate("function('lower', {0})", member.name)));
+    }
 }
