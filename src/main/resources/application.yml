@@ -4,6 +4,7 @@ server:
 spring:
   application:
     name: Spring Querydsl Application
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3309/querydsl_db?&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
@@ -18,9 +19,8 @@ spring:
       hibernate:
         format_sql: true
 
-  config:
-    activate:
-      on-profile: local
+  profiles:
+    active: local
 
 logging:
   level:

@@ -6,7 +6,7 @@ spring:
     name: Spring Querydsl Application
 
   profiles:
-    active: true
+    active: test
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -22,9 +22,6 @@ spring:
       hibernate:
         format_sql: true
 
-  config:
-    activate:
-      on-profile: local
 
 logging:
   level:
