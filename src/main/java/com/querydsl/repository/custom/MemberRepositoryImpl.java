@@ -5,6 +5,8 @@ import com.querydsl.dto.MemberSearchCondition;
 import com.querydsl.dto.MemberTeamDto;
 import com.querydsl.dto.QMemberTeamDto;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.util.StringUtils;
 
 import javax.persistence.EntityManager;
@@ -58,5 +60,50 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
 
     private BooleanExpression ageLoe(Integer age) {
         return age == null ? null : member.age.loe(age);
+    }
+
+    /**
+     * 간단한 queryDsl 페이징
+    **/
+    @Override
+    public PageImpl<MemberTeamDto> searchPageSimple(MemberSearchCondition condition, Pageable pageable) {
+
+        List<MemberTeamDto> content = queryFactory
+                .select(new QMemberTeamDto(
+                        member.id,
+                        member.name,
+                        member.age,
+                        team.id,
+                        team.name
+                ))
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(nameEq(condition.getName()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe()))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        Long count = queryFactory
+                .select(member.count())
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(nameEq(condition.getName()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe()))
+                .fetchOne();
+
+        return new PageImpl<>(content,pageable,count);
+    }
+
+    /**
+     * 복잡한 queryDsl 페이징
+    **/
+    @Override
+    public List<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
+        return null;
     }
 }
